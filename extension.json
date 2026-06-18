@@ -1,0 +1,64 @@
+{
+	"manifest_version": 2,
+	"name": "Trending",
+	"description": "Implements trending pages in MediaWiki via HitCounters.",
+	"author": ["[https://wikux.org Wikux]"],
+	"version": "0.1.0",
+	"license-name": "GPL-3.0-or-later",
+	"url": "https://github.com/wikux/mediawiki-extensions-Trending",
+
+	"type": "variable",
+
+	"requires": {
+		"MediaWiki": ">=1.43.0"
+	},
+
+	"suggests": {
+		"extensions": {
+			"HitCounters": ">=0.4.0"
+		}
+	},
+
+	"AutoloadClasses": {
+		"MediaWiki\\Extension\\Trending\\Hooks": "src/Hooks.php",
+		"MediaWiki\\Extension\\Trending\\ExtensionConfig": "src/ExtensionConfig.php",
+		"MediaWiki\\Extension\\Trending\\PageViewCounter": "src/PageViewCounter.php",
+		"MediaWiki\\Extension\\Trending\\PageViewCountUpdate": "src/PageViewCountUpdate.php",
+		"MediaWiki\\Extension\\Trending\\PageViewFooterItem": "src/PageViewFooterItem.php",
+		"MediaWiki\\Extension\\Trending\\TrendingQuery": "src/TrendingQuery.php",
+		"MediaWiki\\Extension\\Trending\\CategoryPopularBlock": "src/CategoryPopularBlock.php",
+		"MediaWiki\\Extension\\Trending\\TrendingCategoryPage": "src/TrendingCategoryPage.php"
+	},
+
+	"ServiceWiringFiles": [
+		"src/ServiceWiring.php"
+	],
+
+	"MessagesDirs": {
+		"Trending": "i18n"
+	},
+
+	"Hooks": {
+		"ArticleFromTitle": "MediaWiki\\Extension\\Trending\\Hooks::onArticleFromTitle",
+		"BeforePageDisplay": "MediaWiki\\Extension\\Trending\\Hooks::onBeforePageDisplay",
+		"LoadExtensionSchemaUpdates": "MediaWiki\\Extension\\Trending\\Hooks::onLoadExtensionSchemaUpdates",
+		"PageViewUpdates": "MediaWiki\\Extension\\Trending\\Hooks::onPageViewUpdates",
+		"SkinAddFooterLinks": "MediaWiki\\Extension\\Trending\\Hooks::onSkinAddFooterLinks",
+		"SkinTemplateNavigation::Universal": "MediaWiki\\Extension\\Trending\\Hooks::onSkinTemplateNavigation__Universal"
+	},
+
+	"config": {
+		"PageViewCountDataSource": {
+			"value": "Trending",
+			"description": "The data source for page view counts. Use HitCounters for the HitCounters extension if you already have it installed."
+		},
+		"TrendingCategoryLimit": {
+			"value": 10,
+			"description": "Maximum number of popular pages to show on category pages."
+		},
+		"TrendingShowCounts": {
+			"value": true,
+			"description": "Whether to display view counts next to popular page links on category pages."
+		}
+	}
+}
