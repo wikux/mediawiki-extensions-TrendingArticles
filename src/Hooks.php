@@ -76,19 +76,6 @@ class Hooks {
 	 * @param User $user
 	 */
 	public static function onPageViewUpdates( WikiPage $wikiPage, User $user ): void {
-		if ( !$wikiPage->exists() ) {
-			return;
-		}
-
-		$title = $wikiPage->getTitle();
-		if ( !$title->isContentPage() ) {
-			return;
-		}
-
-		if ( $user->isRegistered() && $user->isBot() ) {
-			return;
-		}
-
 		$services = MediaWikiServices::getInstance();
 		/** @var ExtensionConfig $config */
 		$config = $services->getService( ExtensionConfig::SERVICE_NAME );
@@ -96,6 +83,11 @@ class Hooks {
 			return;
 		}
 
+		if ( !PageViewCounter::shouldCountPageView( $wikiPage, $user ) ) {
+			return;
+		}
+
+		$title = $wikiPage->getTitle();
 		$pageId = (int)$title->getArticleID();
 		if ( $pageId <= 0 ) {
 			return;

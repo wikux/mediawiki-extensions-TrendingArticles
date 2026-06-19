@@ -32,7 +32,7 @@ Depending on your infrastructure you may be interested in Git submodules. Altern
 
 The below extensions are also suggested to be installed (depending on your configurations):
 
-* HitCounters (>=0.4.0)
+* HitCounters (>=0.4.0) (it is recommended to disable this extension if using the Trending data source)
 * PageImages
 * ShortDescription
 

@@ -6,7 +6,9 @@ use LogicException;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Exception\MWExceptionHandler;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 use Wikimedia\Rdbms\DBError;
 
 class PageViewCounter {
@@ -162,6 +164,26 @@ class PageViewCounter {
 		return $config->getDataSource();
 	}
 
+	/**
+	 * determines whether or not to count a page view
+	 */
+	public static function shouldCountPageView( WikiPage $wikiPage, User $user ): bool {
+		if ( !$wikiPage->exists() ) {
+			return false;
+		}
+
+		$title = $wikiPage->getTitle();
+		if ( !$title->isContentPage() ) {
+			return false;
+		}
+
+		if ( $user->isAllowed( 'bot' ) || $user->isAllowed( 'hitcounter-exempt' ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
 	private static function shouldCountCurrentView( Title $title, IContextSource $context ): bool {
 		$request = $context->getRequest();
 
@@ -175,22 +197,14 @@ class PageViewCounter {
 			return false;
 		}
 
-		if ( !$title->exists() || !$title->isContentPage() ) {
-			return false;
-		}
+		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
 
-		$user = $context->getUser();
-
-		if ( $user->isRegistered() && $user->isBot() ) {
-			return false;
-		}
-
-		return true;
+		return self::shouldCountPageView( $wikiPage, $context->getUser() );
 	}
 
 	private static function getTrendingCount( Title $title ): int {
 		$pageId = (int)$title->getArticleID();
-		
+
 		if ( $pageId <= 0 ) {
 			return 0;
 		}
