@@ -10,8 +10,10 @@ use MediaWiki\Title\Title;
 use Wikimedia\Rdbms\DBError;
 
 class PageViewCounter {
+	public const DAILY_RETENTION_DAYS = 7;
+
 	/**
-	 * Returns the stored view count for a title, using the configured data source.
+	 * returns the stored view count for a title using the configured data source
 	 */
 	public static function getPageViewCount( Title $title ): int {
 		$dataSource = self::getDataSource();
@@ -31,8 +33,7 @@ class PageViewCounter {
 	}
 
 	/**
-	 * Count to show readers. Includes the current page view when applicable,
-	 * because the DB increment is deferred until after output.
+	 * count to show readers (includes the current page view when applicable, because the db increment is deferred until after output)
 	 */
 	public static function getDisplayCount( Title $title, ?IContextSource $context = null ): int {
 		$count = self::getPageViewCount( $title );
@@ -45,7 +46,7 @@ class PageViewCounter {
 	}
 
 	/**
-	 * Upsert a page view increment. Uses onTransactionCommitOrIdle for SQLite.
+	 * upsert a page view increment (uses onTransactionCommitOrIdle for SQLite)
 	 */
 	public static function persistIncrement( int $page_id ): void {
 		if ( $page_id <= 0 ) {
@@ -89,6 +90,8 @@ class PageViewCounter {
 						],
 						$fname
 					);
+
+					self::maybePruneDailyCounts();
 				} catch ( DBError $e ) {
 					MWExceptionHandler::logException( $e );
 				}
@@ -97,20 +100,77 @@ class PageViewCounter {
 		);
 	}
 
+	/**
+	 * remove all stored counts for a deleted page
+	 */
+	public static function deletePageCounts( int $page_id ): void {
+		if ( $page_id <= 0 ) {
+			return;
+		}
+
+		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
+		$fname = __METHOD__;
+
+		try {
+			$dbw->delete( 'trending_pageview', [ 'tp_page_id' => $page_id ], $fname );
+			$dbw->delete( 'trending_pageview_daily', [ 'tpd_page_id' => $page_id ], $fname );
+		} catch ( DBError $e ) {
+			MWExceptionHandler::logException( $e );
+		}
+	}
+
+	/**
+	 * drop daily rows older than the retention window used for weekly trending
+	 */
+	public static function pruneDailyCounts(): void {
+		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
+		$cutoff_date = substr(
+			wfTimestamp( TS_MW, time() - self::DAILY_RETENTION_DAYS * 86400 ),
+			0,
+			8
+		);
+
+		try {
+			$dbw->newDeleteQueryBuilder()
+				->deleteFrom( 'trending_pageview_daily' )
+				->where( $dbw->expr( 'tpd_date', '<', $cutoff_date ) )
+				->caller( __METHOD__ )
+				->execute();
+		} catch ( DBError $e ) {
+			MWExceptionHandler::logException( $e );
+		}
+	}
+
+	private static function maybePruneDailyCounts(): void {
+		$cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
+		$cache->getWithSetCallback(
+			$cache->makeKey( 'trending', 'prune-daily' ),
+			3600,
+			static function () {
+				self::pruneDailyCounts();
+				return 1;
+			}
+		);
+	}
+
 	public static function getDataSource(): string {
 		$services = MediaWikiServices::getInstance();
+
 		/** @var ExtensionConfig $config */
 		$config = $services->getService( ExtensionConfig::SERVICE_NAME );
+
 		return $config->getDataSource();
 	}
 
 	private static function shouldCountCurrentView( Title $title, IContextSource $context ): bool {
 		$request = $context->getRequest();
+
 		if ( $request->getVal( 'action', 'view' ) !== 'view' ) {
 			return false;
 		}
 
 		$ctxTitle = $context->getTitle();
+
 		if ( !$ctxTitle || !$ctxTitle->equals( $title ) ) {
 			return false;
 		}
@@ -120,6 +180,7 @@ class PageViewCounter {
 		}
 
 		$user = $context->getUser();
+
 		if ( $user->isRegistered() && $user->isBot() ) {
 			return false;
 		}
@@ -129,6 +190,7 @@ class PageViewCounter {
 
 	private static function getTrendingCount( Title $title ): int {
 		$pageId = (int)$title->getArticleID();
+		
 		if ( $pageId <= 0 ) {
 			return 0;
 		}

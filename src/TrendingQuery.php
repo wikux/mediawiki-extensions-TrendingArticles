@@ -11,8 +11,6 @@ class TrendingQuery {
 	public const PERIOD_ALL = 'all';
 	public const PERIOD_WEEK = 'week';
 
-	private const WEEK_DAYS = 7;
-
 	/**
 	 * @return list<array{title:Title,count:int}>
 	 */
@@ -73,7 +71,7 @@ class TrendingQuery {
 
 		if ( $dataSource !== 'HitCounters' && $period === self::PERIOD_WEEK ) {
 			$cutoff_date = substr(
-				wfTimestamp( TS_MW, time() - self::WEEK_DAYS * 86400 ),
+				wfTimestamp( TS_MW, time() - PageViewCounter::DAILY_RETENTION_DAYS * 86400 ),
 				0,
 				8
 			);

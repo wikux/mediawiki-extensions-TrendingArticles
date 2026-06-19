@@ -60,6 +60,7 @@
 		"ArticleFromTitle": "MediaWiki\\Extension\\Trending\\Hooks::onArticleFromTitle",
 		"BeforePageDisplay": "MediaWiki\\Extension\\Trending\\Hooks::onBeforePageDisplay",
 		"LoadExtensionSchemaUpdates": "MediaWiki\\Extension\\Trending\\Hooks::onLoadExtensionSchemaUpdates",
+		"PageDeleteComplete": "MediaWiki\\Extension\\Trending\\Hooks::onPageDeleteComplete",
 		"PageViewUpdates": "MediaWiki\\Extension\\Trending\\Hooks::onPageViewUpdates",
 		"SkinAddFooterLinks": "MediaWiki\\Extension\\Trending\\Hooks::onSkinAddFooterLinks",
 		"SkinTemplateNavigation::Universal": "MediaWiki\\Extension\\Trending\\Hooks::onSkinTemplateNavigation__Universal"
