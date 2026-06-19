@@ -76,7 +76,7 @@
 			"description": "Maximum number of popular pages to show on category pages."
 		},
 		"TrendingShowCounts": {
-			"value": true,
+			"value": false,
 			"description": "Whether to display view counts next to popular page links on category pages."
 		},
 		"TrendingCitizenLimit": {
