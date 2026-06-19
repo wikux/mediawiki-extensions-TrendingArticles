@@ -2,22 +2,26 @@
 
 namespace MediaWiki\Extension\Trending;
 
-use MediaWiki\Api\ApiBase;
-use MediaWiki\Api\ApiMain;
 use ExtensionRegistry;
-use MediaWiki\Request\FauxRequest;
+use MediaWiki\MediaWikiServices;
 
 class TrendingPageMedia {
 	/**
 	 * @param list<array{title:\MediaWiki\Title\Title,count:int}> $pages
-	 * @return array<int,array{thumbnail?:array{source:string,width:int,height:int},extract?:string}>
+	 * @return array<int,array{
+	 *   thumbnail?:array{source:string,width:int,height:int},
+	 *   display_title?:string,
+	 *   shortdesc?:string
+	 * }>
 	 */
-	public static function getForPages( array $pages, int $thumb_size, bool $include_extract ): array {
+	public static function getForPages( array $pages, int $thumb_size ): array {
 		$page_ids = [];
+		$titles_by_id = [];
 		foreach ( $pages as $entry ) {
 			$page_id = $entry['title']->getArticleID();
 			if ( $page_id > 0 ) {
 				$page_ids[] = $page_id;
+				$titles_by_id[$page_id] = $entry['title'];
 			}
 		}
 
@@ -55,57 +59,30 @@ class TrendingPageMedia {
 			}
 		}
 
-		if ( $include_extract && ExtensionRegistry::getInstance()->isLoaded( 'TextExtracts' ) ) {
-			$extracts = self::getExtracts( $page_ids );
+		$page_props = MediaWikiServices::getInstance()->getPageProps()->getProperties(
+			$titles_by_id,
+			[ 'displaytitle', 'shortdesc' ]
+		);
 
-			foreach ( $extracts as $page_id => $extract ) {
-				$result[$page_id]['extract'] = $extract;
+		foreach ( $page_props as $page_id => $props ) {
+			$page_id = (int)$page_id;
+
+			if ( !is_array( $props ) ) {
+				continue;
+			}
+
+			$display_title = $props['displaytitle'] ?? '';
+			if ( is_string( $display_title ) && $display_title !== '' ) {
+				$result[$page_id]['display_title'] = $display_title;
+			}
+
+			$shortdesc = $props['shortdesc'] ?? '';
+			if ( is_string( $shortdesc ) && $shortdesc !== '' ) {
+				$result[$page_id]['shortdesc'] = $shortdesc;
 			}
 		}
 
 		return $result;
-	}
-
-	/**
-	 * @param int[] $page_ids
-	 * @return array<int,string>
-	 */
-	private static function getExtracts( array $page_ids ): array {
-		$extracts = [];
-
-		foreach ( array_chunk( $page_ids, ApiBase::LIMIT_SML1 ) as $chunk ) {
-			$request = new FauxRequest( [
-				'action' => 'query',
-				'prop' => 'extracts',
-				'pageids' => implode( '|', $chunk ),
-				'exintro' => true,
-				'explaintext' => true,
-				'exchars' => 120,
-				'exlimit' => 'max',
-			] );
-
-			$api = new ApiMain( $request );
-			$api->execute();
-
-			$pages = (array)$api->getResult()->getResultData(
-				[ 'query', 'pages' ],
-				[ 'Strip' => 'base' ]
-			);
-
-			foreach ( $pages as $page_id => $data ) {
-				if ( !is_array( $data ) || !isset( $data['extract'] ) ) {
-					continue;
-				}
-
-				$extract = self::normalizeApiText( $data['extract'] );
-
-				if ( $extract !== '' ) {
-					$extracts[(int)$page_id] = $extract;
-				}
-			}
-		}
-
-		return $extracts;
 	}
 
 	private static function normalizeApiText( mixed $value ): string {
@@ -116,7 +93,7 @@ class TrendingPageMedia {
 		if ( is_array( $value ) && isset( $value['*'] ) && is_string( $value['*'] ) ) {
 			return $value['*'];
 		}
-		
+
 		return '';
 	}
 }

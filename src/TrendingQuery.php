@@ -8,10 +8,19 @@ use MediaWiki\Title\Title;
 use Wikimedia\Rdbms\SelectQueryBuilder;
 
 class TrendingQuery {
+	public const PERIOD_ALL = 'all';
+	public const PERIOD_WEEK = 'week';
+
+	private const WEEK_DAYS = 7;
+
 	/**
 	 * @return list<array{title:Title,count:int}>
 	 */
-	public static function getTopPagesInCategory( Title $category, int $limit ): array {
+	public static function getTopPagesInCategory(
+		Title $category,
+		int $limit,
+		string $period = self::PERIOD_ALL
+	): array {
 		if ( !$category->inNamespace( NS_CATEGORY ) || $limit <= 0 ) {
 			return [];
 		}
@@ -28,21 +37,31 @@ class TrendingQuery {
 			if ( !class_exists( \HitCounters\HitCounters::class ) ) {
 				throw new LogicException( 'HitCounters data source selected but HitCounters is not installed.' );
 			}
-			
+
 			$countColumn = 'page_counter';
 			$countJoin = [ 'hit_counter', null, 'page_id = cl_from' ];
+		} elseif ( $period === self::PERIOD_WEEK ) {
+			$countColumn = 'view_count';
+			$countJoin = [ 'trending_pageview_daily', null, 'tpd_page_id = page_id' ];
 		} else {
 			$countColumn = 'tp_count';
 			$countJoin = [ 'trending_pageview', null, 'tp_page_id = page_id' ];
 		}
 
+		$select = [
+			'page_id',
+			'page_namespace',
+			'page_title',
+		];
+
+		if ( $dataSource !== 'HitCounters' && $period === self::PERIOD_WEEK ) {
+			$select['view_count'] = 'SUM(tpd_count)';
+		} else {
+			$select['view_count'] = $countColumn;
+		}
+
 		$queryBuilder = $dbr->newSelectQueryBuilder()
-			->select( [
-				'page_id',
-				'page_namespace',
-				'page_title',
-				'view_count' => $countColumn,
-			] )
+			->select( $select )
 			->from( 'categorylinks' )
 			->join( 'page', null, 'page_id = cl_from' )
 			->join( $countJoin[0], $countJoin[1], $countJoin[2] )
@@ -50,8 +69,21 @@ class TrendingQuery {
 				'cl_type' => 'page',
 				'page_is_redirect' => 0,
 			] )
-			->andWhere( $dbr->expr( 'page_namespace', '=', $contentNamespaces ) )
-			->orderBy( $countColumn, SelectQueryBuilder::SORT_DESC )
+			->andWhere( $dbr->expr( 'page_namespace', '=', $contentNamespaces ) );
+
+		if ( $dataSource !== 'HitCounters' && $period === self::PERIOD_WEEK ) {
+			$cutoff_date = substr(
+				wfTimestamp( TS_MW, time() - self::WEEK_DAYS * 86400 ),
+				0,
+				8
+			);
+			$queryBuilder
+				->andWhere( $dbr->expr( 'tpd_date', '>=', $cutoff_date ) )
+				->groupBy( [ 'page_id', 'page_namespace', 'page_title' ], __METHOD__ );
+		}
+
+		$queryBuilder
+			->orderBy( 'view_count', SelectQueryBuilder::SORT_DESC )
 			->limit( $limit )
 			->caller( __METHOD__ );
 

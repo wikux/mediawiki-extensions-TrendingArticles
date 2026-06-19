@@ -14,15 +14,17 @@ class CategoryTrendingGridBlock {
 		$config = $services->getService( ExtensionConfig::SERVICE_NAME );
 		$limit = $config->getCitizenLimit();
 		$thumb_size = $config->getCitizenThumbSize();
-		$show_counts = $config->getShowCounts();
-		$show_extract = $config->getCitizenShowExtract();
 
-		$pages = TrendingQuery::getTopPagesInCategory( $category, $limit );
+		$pages = TrendingQuery::getTopPagesInCategory(
+			$category,
+			$limit,
+			TrendingQuery::PERIOD_WEEK
+		);
 		if ( $pages === [] ) {
 			return '';
 		}
 
-		$media = TrendingPageMedia::getForPages( $pages, $thumb_size, $show_extract );
+		$media = TrendingPageMedia::getForPages( $pages, $thumb_size );
 
 		$items = [];
 		foreach ( $pages as $entry ) {
@@ -31,37 +33,14 @@ class CategoryTrendingGridBlock {
 			$page_media = $media[$page_id] ?? [];
 
 			$thumb_html = self::renderThumb( $title, $page_media['thumbnail'] ?? null );
-			$title_html = Html::element(
-				'span',
-				[ 'class' => 'trending-grid__title' ],
-				$title->getText()
-			);
+			$body_parts = [ self::renderTitle( $title, $page_media['display_title'] ?? null ) ];
 
-			$body_parts = [ $title_html ];
-
-			if ( $show_extract && isset( $page_media['extract'] ) ) {
-				$extract = is_string( $page_media['extract'] )
-					? $page_media['extract']
-					: '';
-
-				if ( $extract !== '' ) {
-					$body_parts[] = Html::element(
-						'span',
-						[ 'class' => 'trending-grid__extract' ],
-						$extract
-					);
-				}
-			}
-
-			if ( $show_counts ) {
-				$count_msg = $out->msg( 'trending-category-grid-viewcount' )
-					->numParams( $entry['count'] )
-					->text();
-					
+			$shortdesc = $page_media['shortdesc'] ?? '';
+			if ( is_string( $shortdesc ) && $shortdesc !== '' ) {
 				$body_parts[] = Html::element(
 					'span',
-					[ 'class' => 'trending-grid__count' ],
-					$count_msg
+					[ 'class' => 'trending-grid__shortdesc' ],
+					$shortdesc
 				);
 			}
 
@@ -138,6 +117,22 @@ class CategoryTrendingGridBlock {
 				'aria-hidden' => 'true',
 			],
 			''
+		);
+	}
+
+	private static function renderTitle( Title $title, ?string $display_title ): string {
+		if ( is_string( $display_title ) && $display_title !== '' ) {
+			return Html::rawElement(
+				'span',
+				[ 'class' => 'trending-grid__title' ],
+				$display_title
+			);
+		}
+
+		return Html::element(
+			'span',
+			[ 'class' => 'trending-grid__title' ],
+			$title->getText()
 		);
 	}
 }

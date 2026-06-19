@@ -74,6 +74,21 @@ class PageViewCounter {
 						],
 						$fname
 					);
+
+					$date = substr( $now, 0, 8 );
+					$dbw->upsert(
+						'trending_pageview_daily',
+						[
+							'tpd_page_id' => $page_id,
+							'tpd_date' => $date,
+							'tpd_count' => 1,
+						],
+						[ [ 'tpd_page_id', 'tpd_date' ] ],
+						[
+							'tpd_count = tpd_count + 1',
+						],
+						$fname
+					);
 				} catch ( DBError $e ) {
 					MWExceptionHandler::logException( $e );
 				}

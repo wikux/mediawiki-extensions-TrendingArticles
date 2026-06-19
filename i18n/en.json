@@ -7,7 +7,6 @@
 
 	"trending-category-popular-heading": "Popular pages",
 	"trending-category-trending-heading": "Trending pages",
-	"trending-category-grid-viewcount": "{{PLURAL:$1|1 view|$1 views}}",
 	"trending-page-info-viewcount": "Page views",
 	"trending-viewcount": "This page has been viewed $1 times."
 }

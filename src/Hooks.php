@@ -21,6 +21,7 @@ class Hooks {
 	public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ) {
 		$dir = __DIR__ . '/../sql';
 		$updater->addExtensionTable( 'trending_pageview', "$dir/trending_pageview.sql" );
+		$updater->addExtensionTable( 'trending_pageview_daily', "$dir/trending_pageview_daily.sql" );
 	}
 
 	/**

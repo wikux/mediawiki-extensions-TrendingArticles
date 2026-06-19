@@ -17,7 +17,7 @@
 		"extensions": {
 			"HitCounters": ">=0.4.0",
 			"PageImages": "*",
-			"TextExtracts": "*"
+			"ShortDescription": "*"
 		}
 	},
 
@@ -85,10 +85,6 @@
 		"TrendingCitizenThumbSize": {
 			"value": 320,
 			"description": "Maximum thumbnail width in pixels for the Citizen skin trending grid."
-		},
-		"TrendingCitizenShowExtract": {
-			"value": true,
-			"description": "Whether to show a TextExtracts lead extract under each card title in the Citizen skin grid."
 		}
 	}
 }
