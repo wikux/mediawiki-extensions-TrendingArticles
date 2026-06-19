@@ -1,11 +1,11 @@
 {
 	"manifest_version": 2,
-	"name": "Trending",
+	"name": "TrendingArticles",
 	"description": "Implements trending articles.",
 	"author": ["[https://wikux.org Wikux]"],
 	"version": "0.1.0",
 	"license-name": "GPL-3.0-or-later",
-	"url": "https://github.com/wikux/mediawiki-extensions-Trending",
+	"url": "https://github.com/wikux/mediawiki-extensions-TrendingArticles",
 
 	"type": "variable",
 
