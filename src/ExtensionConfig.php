@@ -11,11 +11,17 @@ class ExtensionConfig {
 	public const DATA_SOURCE = 'PageViewCountDataSource';
 	public const CATEGORY_LIMIT = 'TrendingCategoryLimit';
 	public const SHOW_COUNTS = 'TrendingShowCounts';
+	public const CITIZEN_LIMIT = 'TrendingCitizenLimit';
+	public const CITIZEN_THUMB_SIZE = 'TrendingCitizenThumbSize';
+	public const CITIZEN_SHOW_EXTRACT = 'TrendingCitizenShowExtract';
 
 	public const OPTIONS = [
 		self::DATA_SOURCE,
 		self::CATEGORY_LIMIT,
 		self::SHOW_COUNTS,
+		self::CITIZEN_LIMIT,
+		self::CITIZEN_THUMB_SIZE,
+		self::CITIZEN_SHOW_EXTRACT,
 	];
 
 	public function __construct( private readonly ServiceOptions $options ) {
@@ -32,5 +38,17 @@ class ExtensionConfig {
 
 	public function getShowCounts(): bool {
 		return (bool)$this->options->get( self::SHOW_COUNTS );
+	}
+
+	public function getCitizenLimit(): int {
+		return max( 1, (int)$this->options->get( self::CITIZEN_LIMIT ) );
+	}
+
+	public function getCitizenThumbSize(): int {
+		return max( 50, (int)$this->options->get( self::CITIZEN_THUMB_SIZE ) );
+	}
+
+	public function getCitizenShowExtract(): bool {
+		return (bool)$this->options->get( self::CITIZEN_SHOW_EXTRACT );
 	}
 }

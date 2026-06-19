@@ -2,24 +2,44 @@
 
 namespace MediaWiki\Extension\Trending;
 
-use MediaWiki\Html\Html;
-use MediaWiki\MediaWikiServices;
+use ExtensionRegistry;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Title\Title;
+use Skin;
 
 class CategoryPopularBlock {
+	private const STYLE_MODULE = 'ext.trending.citizenGrid.styles';
+
 	private static bool $injected = false;
+	private static bool $styles_registered = false;
 
 	public static function wasInjected(): bool {
 		return self::$injected;
 	}
 
-	public static function inject( Title $category, OutputPage $out ): void {
+	public static function registerStyles( OutputPage $out, ?Skin $skin ): void {
+		if ( !self::usesGridRenderer( $skin ) || self::$styles_registered ) {
+			return;
+		}
+		
+		$out->addModuleStyles( [ self::STYLE_MODULE ] );
+
+		// fallback
+		$css = self::getGridStyles();
+
+		if ( $css !== '' ) {
+			$out->addInlineStyle( $css );
+		}
+
+		self::$styles_registered = true;
+	}
+
+	public static function inject( Title $category, OutputPage $out, ?Skin $skin = null ): void {
 		if ( self::$injected ) {
 			return;
 		}
 
-		$html = self::render( $category, $out );
+		$html = self::render( $category, $out, $skin );
 		if ( $html === '' ) {
 			return;
 		}
@@ -28,56 +48,35 @@ class CategoryPopularBlock {
 		self::$injected = true;
 	}
 
-	public static function render( Title $category, OutputPage $out ): string {
-		$services = MediaWikiServices::getInstance();
-		/** @var ExtensionConfig $config */
-		$config = $services->getService( ExtensionConfig::SERVICE_NAME );
-		$limit = $config->getCategoryLimit();
-
-		$pages = TrendingQuery::getTopPagesInCategory( $category, $limit );
-		if ( $pages === [] ) {
-			return '';
+	public static function render( Title $category, OutputPage $out, ?Skin $skin = null ): string {
+		if ( self::usesGridRenderer( $skin ) ) {
+			return CategoryTrendingGridBlock::render( $category, $out );
 		}
 
-		$show_counts = $config->getShowCounts();
-		$link_renderer = $services->getLinkRenderer();
-		$language = $out->getLanguage();
+		return CategoryPopularListBlock::render( $category, $out );
+	}
 
-		$items = [];
-		foreach ( $pages as $entry ) {
-			$title = $entry['title'];
-			$link = $link_renderer->makeLink( $title, $title->getPrefixedText() );
-			if ( $show_counts ) {
-				$count_msg = $language->formatNum( $entry['count'] );
-				$link .= ' ' . Html::rawElement(
-					'span',
-					[ 'class' => 'trending-category-block__count' ],
-					"($count_msg)"
-				);
-			}
-			$items[] = Html::rawElement( 'li', [ 'class' => 'trending-category-block__item' ], $link );
+	private static function usesGridRenderer( ?Skin $skin ): bool {
+		return $skin !== null
+			&& SkinHelper::isCitizen( $skin )
+			&& ExtensionRegistry::getInstance()->isLoaded( 'PageImages' );
+	}
+
+	private static function getGridStyles(): string {
+		static $css = null;
+		if ( $css !== null ) {
+			return $css;
 		}
 
-		$heading = $out->msg( 'trending-category-popular-heading' )->text();
-		return Html::rawElement(
-			'section',
-			[
-				'class' => 'trending-category-block',
-				'aria-labelledby' => 'trending-category-popular-heading',
-			],
-			Html::rawElement(
-				'h2',
-				[
-					'id' => 'trending-category-popular-heading',
-					'class' => 'trending-category-block__heading',
-				],
-				$heading
-			) .
-			Html::rawElement(
-				'ul',
-				[ 'class' => 'trending-category-block__list' ],
-				implode( '', $items )
-			)
-		);
+		$path = dirname( __DIR__ ) . '/resources/ext.trending.citizenGrid.styles.css';
+		if ( !is_readable( $path ) ) {
+			$css = '';
+			return $css;
+		}
+
+		$contents = file_get_contents( $path );
+		$css = is_string( $contents ) ? $contents : '';
+
+		return $css;
 	}
 }

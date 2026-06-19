@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "Trending",
-	"description": "Implements trending pages in MediaWiki via HitCounters.",
+	"description": "Implements trending articles.",
 	"author": ["[https://wikux.org Wikux]"],
 	"version": "0.1.0",
 	"license-name": "GPL-3.0-or-later",
@@ -15,7 +15,9 @@
 
 	"suggests": {
 		"extensions": {
-			"HitCounters": ">=0.4.0"
+			"HitCounters": ">=0.4.0",
+			"PageImages": "*",
+			"TextExtracts": "*"
 		}
 	},
 
@@ -27,6 +29,10 @@
 		"MediaWiki\\Extension\\Trending\\PageViewFooterItem": "src/PageViewFooterItem.php",
 		"MediaWiki\\Extension\\Trending\\TrendingQuery": "src/TrendingQuery.php",
 		"MediaWiki\\Extension\\Trending\\CategoryPopularBlock": "src/CategoryPopularBlock.php",
+		"MediaWiki\\Extension\\Trending\\CategoryPopularListBlock": "src/CategoryPopularListBlock.php",
+		"MediaWiki\\Extension\\Trending\\CategoryTrendingGridBlock": "src/CategoryTrendingGridBlock.php",
+		"MediaWiki\\Extension\\Trending\\TrendingPageMedia": "src/TrendingPageMedia.php",
+		"MediaWiki\\Extension\\Trending\\SkinHelper": "src/SkinHelper.php",
 		"MediaWiki\\Extension\\Trending\\TrendingCategoryPage": "src/TrendingCategoryPage.php"
 	},
 
@@ -36,6 +42,18 @@
 
 	"MessagesDirs": {
 		"Trending": "i18n"
+	},
+
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "Trending"
+	},
+
+	"ResourceModules": {
+		"ext.trending.citizenGrid.styles": {
+			"styles": "resources/ext.trending.citizenGrid.styles.css",
+			"targets": ["desktop", "mobile"]
+		}
 	},
 
 	"Hooks": {
@@ -50,7 +68,7 @@
 	"config": {
 		"PageViewCountDataSource": {
 			"value": "Trending",
-			"description": "The data source for page view counts. Use HitCounters for the HitCounters extension if you already have it installed."
+			"description": "The data source for page view counts. Use `HitCounters` for the HitCounters extension if you already have it installed."
 		},
 		"TrendingCategoryLimit": {
 			"value": 10,
@@ -59,6 +77,18 @@
 		"TrendingShowCounts": {
 			"value": true,
 			"description": "Whether to display view counts next to popular page links on category pages."
+		},
+		"TrendingCitizenLimit": {
+			"value": 6,
+			"description": "Maximum number of trending pages to show in the Citizen skin thumbnail grid."
+		},
+		"TrendingCitizenThumbSize": {
+			"value": 320,
+			"description": "Maximum thumbnail width in pixels for the Citizen skin trending grid."
+		},
+		"TrendingCitizenShowExtract": {
+			"value": true,
+			"description": "Whether to show a TextExtracts lead extract under each card title in the Citizen skin grid."
 		}
 	}
 }

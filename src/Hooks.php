@@ -87,8 +87,12 @@ class Hooks {
 			return;
 		}
 
-		if ( $title->inNamespace( NS_CATEGORY ) && !CategoryPopularBlock::wasInjected() ) {
-			CategoryPopularBlock::inject( $title, $out );
+		if ( $title->inNamespace( NS_CATEGORY ) ) {
+			CategoryPopularBlock::registerStyles( $out, $skin );
+
+			if ( !CategoryPopularBlock::wasInjected() ) {
+				CategoryPopularBlock::inject( $title, $out, $skin );
+			}
 		}
 	}
 
