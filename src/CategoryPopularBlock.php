@@ -3,7 +3,9 @@
 namespace MediaWiki\Extension\Trending;
 
 use ExtensionRegistry;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use Skin;
 
@@ -17,8 +19,23 @@ class CategoryPopularBlock {
 		return self::$injected;
 	}
 
+	public static function categoryHasIntroText( Title $category ): bool {
+		if ( !$category->exists() ) {
+			return false;
+		}
+
+		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $category );
+		$content = $wikiPage->getContent( RevisionRecord::RAW );
+		if ( !$content ) {
+			return false;
+		}
+
+		return trim( $content->getText() ) !== '';
+	}
+
 	public static function registerStyles( OutputPage $out, ?Skin $skin ): void {
-		if ( !self::usesGridRenderer( $skin ) || self::$styles_registered ) {
+		$title = $out->getTitle();
+		if ( !( $title instanceof Title ) || !self::categoryHasIntroText( $title ) || !self::usesGridRenderer( $skin ) || self::$styles_registered ) {
 			return;
 		}
 		
@@ -49,6 +66,10 @@ class CategoryPopularBlock {
 	}
 
 	public static function render( Title $category, OutputPage $out, ?Skin $skin = null ): string {
+		if ( self::usesGridRenderer( $skin ) && !self::categoryHasIntroText( $category ) ) {
+			return '';
+		}
+
 		if ( self::usesGridRenderer( $skin ) ) {
 			return CategoryTrendingGridBlock::render( $category, $out );
 		}

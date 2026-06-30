@@ -10,6 +10,7 @@ use Wikimedia\Rdbms\SelectQueryBuilder;
 class TrendingQuery {
 	public const PERIOD_ALL = 'all';
 	public const PERIOD_WEEK = 'week';
+	public const MIN_WEEKLY_VIEWS = 50;
 
 	/**
 	 * @return list<array{title:Title,count:int}>
@@ -77,7 +78,8 @@ class TrendingQuery {
 			);
 			$queryBuilder
 				->andWhere( $dbr->expr( 'tpd_date', '>=', $cutoff_date ) )
-				->groupBy( [ 'page_id', 'page_namespace', 'page_title' ], __METHOD__ );
+				->groupBy( [ 'page_id', 'page_namespace', 'page_title' ], __METHOD__ )
+				->having( $dbr->expr( 'SUM(tpd_count)', '>=', self::MIN_WEEKLY_VIEWS ) );
 		}
 
 		$queryBuilder
@@ -106,9 +108,14 @@ class TrendingQuery {
 				continue;
 			}
 
+			$view_count = (int)$row->view_count;
+			if ( $dataSource !== 'HitCounters' && $period === self::PERIOD_WEEK && $view_count < self::MIN_WEEKLY_VIEWS ) {
+				continue;
+			}
+
 			$pages[] = [
 				'title' => $title,
-				'count' => (int)$row->view_count,
+				'count' => $view_count,
 			];
 		}
 
