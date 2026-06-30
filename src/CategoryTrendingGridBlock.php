@@ -5,6 +5,7 @@ namespace MediaWiki\Extension\Trending;
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Title\Title;
 
 class CategoryTrendingGridBlock {
@@ -121,18 +122,19 @@ class CategoryTrendingGridBlock {
 	}
 
 	private static function renderTitle( Title $title, ?string $display_title ): string {
+		$text = $title->getText();
+
 		if ( is_string( $display_title ) && $display_title !== '' ) {
-			return Html::rawElement(
-				'span',
-				[ 'class' => 'trending-grid__title' ],
-				$display_title
-			);
+			$stripped = Sanitizer::stripAllTags( $display_title );
+			if ( $stripped !== '' ) {
+				$text = $stripped;
+			}
 		}
 
 		return Html::element(
 			'span',
 			[ 'class' => 'trending-grid__title' ],
-			$title->getText()
+			$text
 		);
 	}
 }
