@@ -79,7 +79,7 @@ class TrendingQuery {
 			$queryBuilder
 				->andWhere( $dbr->expr( 'tpd_date', '>=', $cutoff_date ) )
 				->groupBy( [ 'page_id', 'page_namespace', 'page_title' ], __METHOD__ )
-				->having( $dbr->expr( 'SUM(tpd_count)', '>=', self::MIN_WEEKLY_VIEWS ) );
+				->having( 'SUM(tpd_count) >= ' . self::MIN_WEEKLY_VIEWS );
 		}
 
 		$queryBuilder
